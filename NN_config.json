@@ -1,0 +1,62 @@
+{
+	"data": {
+		"filepath": "training_data/",
+		"filename": "data_red.csv",
+		"train_test_split": 0.15,
+		"normalise": true,
+		"num_classes": 3
+	},
+	"training": {
+		"epochs": 15,
+		"batch_size": 16
+	},
+	"model": {
+		"loss": "categorical_crossentropy",
+		"optimizer": "adam",
+		"learning_rate":  0.0001,
+		"save_dir": "saved_models",
+		"layers": [
+			{
+				"type": "dense",
+				"neurons": 7,
+				"input_dim": 7,
+				"activation": "relu"
+			},
+			{
+				"type": "dense",
+				"neurons": 128,
+				"activation": "relu"
+			},
+			{
+				"type": "dense",
+				"neurons": 64,
+				"activation": "relu"
+			},
+			{
+				"type": "dense",
+				"neurons": 64,
+				"activation": "relu"
+			},
+			{
+				"type": "dense",
+				"neurons": 32,
+				"activation": "relu"
+			},
+			{
+				"type": "dense",
+				"neurons": 32,
+				"activation": "relu"
+			},
+			{
+				"type": "dense",
+				"neurons": 8,
+				"activation": "relu"
+			},
+			{
+				"type": "dense",
+				"neurons": 3,
+				"activation": "sigmoid"
+			}
+		]
+	}
+}
