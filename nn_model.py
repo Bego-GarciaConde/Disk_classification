@@ -44,6 +44,7 @@ class Model:
         self.model.compile(loss=self.model_config["loss"], optimizer=opt)
 
     def build_model(self):
+        self.model = Sequential()
         for layer in self.model_config['layers']:
             neurons = layer['neurons'] if 'neurons' in layer else None
             dropout_rate = layer['rate'] if 'rate' in layer else None
@@ -127,6 +128,7 @@ class Model:
         plt.bar(classification, counts_predicted, color='red',
                 width=0.4, alpha=0.3, label="Predicted")
 
+        plt.legend()
         plt.ylabel("No. of particles")
         plt.savefig("models/n_particles_class_validation_data.png")
         plt.show()
@@ -134,10 +136,10 @@ class Model:
     def save_model(self):
         model_json = self.model.to_json()
 
-        with open(self.model_config["save_dir"] + "model.json", "w") as json_file:
+        with open(self.model_config["filepath"] + "model.json", "w") as json_file:
             json_file.write(model_json)
 
-        self.model.save_weights(self.model_config["save_dir"] + "model.h5")
+        self.model.save_weights(self.model_config["filepath"] + "model.h5")
 
 
 
