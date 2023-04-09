@@ -70,17 +70,17 @@ class ClassifySnapshot:
         #  plt.rc(family='serif')
         fig, ax = plt.subplots(2, 3, figsize=(6, 4), sharex=True, sharey=True)
 
-        print(1)
+  
         den = histogram_2d(self.disk, "X", "Z", ax[0, 0])
-        print(2)
+
         den = histogram_2d(self.disk, "X", "Y", ax[1, 0])
-        print(3)
+
         den = histogram_2d(self.old_disk, "X", "Z", ax[0, 1])
-        print(4)
+  
         den = histogram_2d(self.old_disk, "X", "Y", ax[1, 1])
-        print(5)
+
         den = histogram_2d(self.ellipsoid, "X", "Z", ax[0, 2])
-        print(6)
+
         den = histogram_2d(self.ellipsoid, "X", "Y", ax[1, 2])
 
         props = dict(boxstyle='round', facecolor='white', alpha=0.8)
