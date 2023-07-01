@@ -16,7 +16,7 @@ class ClassifySnapshot:
     def __init__(self, name):
         self.name = name
         self.stars_data = pd.read_csv(path_snapshots + f"{self.name}_stars_Rvir.csv", sep=",")
-        self.cla_disk_data = pd.read_csv(path_disk_classification + f"cla_disco_996.csv", index_col=0)
+        self.cla_disk_data = pd.read_csv(path_disk_classification + f"cla_disco_{self.name}.csv", index_col=0)
         self.nn_model = None
         self.test_data = None
         self.complete_data = None
@@ -40,6 +40,7 @@ class ClassifySnapshot:
                                     'Age',
                                     'Vr',
                                     'AlphaFe',
+                                    'cos_alpha'
                                     }, axis=1)
         self.test_data = df_test
 

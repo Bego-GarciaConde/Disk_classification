@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 import tensorflow as tf
+from keras.layers import LSTM
 from sklearn.model_selection import train_test_split
 
 from tensorflow.keras.models import Sequential, model_from_json
@@ -31,6 +32,7 @@ class Model:
         self.model_config = configuration["model"]
         self.training_config = configuration["training"]
         self.data_config = configuration["data"]
+        self.tag = f"SCC_relu_activation_{self.training_config['epochs']}_epochs"
 
     def load_model(self):
         json_file = open('models/model.json', 'r')
@@ -38,7 +40,7 @@ class Model:
         json_file.close()
         self.model = model_from_json(loaded_model_json)
         # load weights into new model
-        self.model.load_weights("models/model.h5")
+        self.model.load_weights(f"models/{self.tag}_model.h5")
         print("Loaded model from disk")
         opt = tf.keras.optimizers.Adam(learning_rate=self.model_config['learning_rate'])
         self.model.compile(loss=self.model_config["loss"], optimizer=opt)
@@ -80,11 +82,14 @@ class Model:
         self.X_test = X_test
         self.y_test = y_test
 
-        y_train_onehot = tf.keras.utils.to_categorical(y_train, num_classes=self.data_config["num_classes"])
-        y_valid_onehot = tf.keras.utils.to_categorical(y_valid, num_classes=self.data_config["num_classes"])
+       # y_train_onehot = tf.keras.utils.to_categorical(y_train, num_classes=self.data_config["num_classes"])
+       # y_valid_onehot = tf.keras.utils.to_categorical(y_valid, num_classes=self.data_config["num_classes"])
 
-        self.history = self.model.fit(X_train, y_train_onehot, epochs=self.training_config["epochs"],
-                                      validation_data=(X_valid, y_valid_onehot))
+       # self.history = self.model.fit(X_train, y_train_onehot, epochs=self.training_config["epochs"],
+      #                                validation_data=(X_valid, y_valid_onehot))
+
+        self.history = self.model.fit(X_train, y_train, epochs=self.training_config["epochs"],
+                                      validation_data=(X_valid, y_valid))
 
     def plot_loss(self):
         fig, ax = plt.subplots(figsize=(8, 5))
@@ -95,7 +100,7 @@ class Model:
                 label="Val loss")
         ax.legend()
         ax.set_yscale("log")
-        plt.savefig("models/loss.png")
+        plt.savefig(f"models/{self.tag}_loss.png")
         plt.show()
 
     def testing_model(self):
@@ -114,32 +119,37 @@ class Model:
         f1 = f1_score(y_true_labels, y_pred_labels, average='macro')
         print("F1-score on test data: {:.2%}".format(f1))
 
-        f1 = f1_score(y_true_labels, y_pred_labels, average='macro')
-        print("F1-score on test data: {:.2%}".format(f1))
+       # f1 = f1_score(y_true_labels, y_pred_labels, average='macro')
+       # print("F1-score on test data: {:.2%}".format(f1))
 
+        width = 0.2
         fig = plt.figure(figsize=(10, 5))
         classification = ["disk", "old disk", "ellipsoid"]
+        ind = np.arange(3)
+
         # creating the bar plot
         counts_predicted = np.bincount(y_pred_labels)
         counts_true = np.bincount(y_true_labels)
 
-        plt.bar(classification, counts_true, color='blue',
-                width=0.4, alpha=0.2, label="True")
-        plt.bar(classification, counts_predicted, color='red',
-                width=0.4, alpha=0.3, label="Predicted")
+        plt.bar(ind-0.15, counts_true, align='edge', color='blue',width = 0.3, alpha=0.3, label="True")
+        plt.bar(ind+0.15, counts_predicted , align='edge', color='red',
+                width=0.3, alpha=0.3, label="Predicted")
+        plt.xticks(ind + width, ['disk', 'old disk', 'ellipsoid'])
+        plt.title(f"F1: {f1:.2f}, Prec: {precision:.2f}", fontsize=10)
 
         plt.legend()
         plt.ylabel("No. of particles")
-        plt.savefig("models/n_particles_class_validation_data.png")
+        plt.savefig(f"models/{self.tag}_n_particles_class_validation_data.png")
         plt.show()
 
     def save_model(self):
+
         model_json = self.model.to_json()
 
-        with open(self.model_config["filepath"] + "model.json", "w") as json_file:
+        with open(self.model_config["filepath"] + f"{self.tag}_model.h5", "w") as json_file:
             json_file.write(model_json)
 
-        self.model.save_weights(self.model_config["filepath"] + "model.h5")
+        self.model.save_weights(self.model_config["filepath"] + f"{self.tag}_model.h5")
 
 
 

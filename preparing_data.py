@@ -5,7 +5,7 @@ rcParams['axes.formatter.use_mathtext'] = True
 from sklearn.preprocessing import StandardScaler
 
 from config import *
-from utils import component_classification
+from utils import component_classification, cartesian_to_spherical
 import json
 
 
@@ -62,7 +62,7 @@ def prepare_data():
                               'R',
                               'AlphaH', 'FeH', 'Age',
                               'Vr',
-                              'AlphaFe',
+                              'AlphaFe','cos_alpha'
                               ], axis=1)
-    print("Saving dada test")
+    print("Saving data test")
     df_final.to_csv(config["filepath"] + config["filename"])

@@ -7,36 +7,32 @@
 		"num_classes": 3
 	},
 	"training": {
-		"epochs": 15,
-		"batch_size": 16
+		"epochs": 30,
+		"batch_size": 10
 	},
 	"model": {
-		"loss": "categorical_crossentropy",
+		"loss": "sparse_categorical_crossentropy",
 		"optimizer": "adam",
-		"learning_rate":  0.0001,
+		"learning_rate":  0.001,
 		"filepath": "models/",
 		"layers": [
 			{
 				"type": "dense",
-				"neurons": 7,
-				"input_dim": 7,
+				"neurons": 6,
+				"input_dim": 6,
 				"activation": "relu"
 			},
 			{
 				"type": "dense",
-				"neurons": 128,
+				"neurons": 32,
 				"activation": "relu"
 			},
 			{
 				"type": "dense",
-				"neurons": 64,
+				"neurons": 32,
 				"activation": "relu"
 			},
-			{
-				"type": "dense",
-				"neurons": 64,
-				"activation": "relu"
-			},
+
 			{
 				"type": "dense",
 				"neurons": 32,
@@ -55,7 +51,7 @@
 			{
 				"type": "dense",
 				"neurons": 3,
-				"activation": "sigmoid"
+				"activation": "softmax"
 			}
 		]
 	}
