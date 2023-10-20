@@ -19,8 +19,8 @@ def main():
       #  nn.load_model()
         nn.build_model()
         nn.train_model()
-        nn.plot_loss()
-        nn.testing_model()
+      #  nn.plot_loss()
+      #  nn.testing_model()
         nn.save_model()
 
     if EVALUATE_SNAPSHOT == 1:

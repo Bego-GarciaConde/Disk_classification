@@ -1,4 +1,5 @@
 import pandas as pd
+from datetime import datetime
 
 path_datos = "/home/bego/GARROTXA_puigsacalm//datos_GARROTXA_resim/"
 path_disk_classification = "/home/bego/GARROTXA_copia_paradox/disco/"
@@ -20,3 +21,10 @@ TRAIN_DATA = 1
 
 EVALUATE_SNAPSHOT = 0
 SNAPSHOT_TEST = 996
+
+# Define names for tensorboard logging and mlflow
+experiment_name = "Disk_classification"
+#model_name = "Disk_classification_%Y%m%d_%H%M%S"
+run_name = datetime.now().strftime("%Y%m%d_%H%M%S")
+#model_name = datetime.now().strftime("%Y%m%d_%H%M%S")
+

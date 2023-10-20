@@ -14,9 +14,20 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import f1_score
 
-import json
+import mlflow
+import mlflow.keras
+from mlflow.models import infer_signature
 
+import json
+from urllib.parse import urlparse
 from config import *
+
+
+def eval_metrics(y_true_labels, y_pred_labels):
+    accuracy = accuracy_score(y_true_labels, y_pred_labels)
+    precision = precision_score(y_true_labels, y_pred_labels, average='macro')
+    f1 = f1_score(y_true_labels, y_pred_labels, average='macro')
+    return accuracy, precision, f1
 
 
 class Model:
@@ -49,21 +60,14 @@ class Model:
         self.model = Sequential()
         for layer in self.model_config['layers']:
             neurons = layer['neurons'] if 'neurons' in layer else None
-            dropout_rate = layer['rate'] if 'rate' in layer else None
             activation = layer['activation'] if 'activation' in layer else None
-            return_seq = layer['return_seq'] if 'return_seq' in layer else None
-            input_timesteps = layer['input_timesteps'] if 'input_timesteps' in layer else None
             input_dim = layer['input_dim'] if 'input_dim' in layer else None
 
-            if layer['type'] == 'dense':
-                self.model.add(Dense(neurons, activation=activation, input_shape=(input_dim,)))
-            if layer['type'] == 'lstm':
-                self.model.add(LSTM(neurons, input_shape=(input_timesteps, input_dim), return_sequences=return_seq))
-            if layer['type'] == 'dropout':
-                self.model.add(Dropout(dropout_rate))
+            self.model.add(Dense(neurons, activation=activation, input_shape=(input_dim,)))
 
         opt = tf.keras.optimizers.Adam(learning_rate=self.model_config['learning_rate'])
-        self.model.compile(loss=self.model_config["loss"], optimizer=opt)
+        # self.model.compile(loss="sparse_categorical_crossentropy", optimizer=opt)#if not one-hot coding
+        self.model.compile(optimizer=opt, loss=self.model_config["loss"])
 
     def train_model(self):
         df = pd.read_csv(self.data_config["filepath"] + self.data_config["filename"], index_col=0)
@@ -81,29 +85,22 @@ class Model:
                                                             random_state=0)
         self.X_test = X_test
         self.y_test = y_test
+        # Is one hot encoding appropiate in this case?
+        # We can use classification of 0, 1, 2 instead of onehot since the old disk
+        # has properties between young disk and ellipsoid..
 
-       # y_train_onehot = tf.keras.utils.to_categorical(y_train, num_classes=self.data_config["num_classes"])
-       # y_valid_onehot = tf.keras.utils.to_categorical(y_valid, num_classes=self.data_config["num_classes"])
+        y_train_onehot = tf.keras.utils.to_categorical(y_train, num_classes=3)
+        y_valid_onehot = tf.keras.utils.to_categorical(y_valid, num_classes=3)
+        # y_test_onehot = tf.keras.utils.to_categorical(y_valid, num_classes=3)
 
-       # self.history = self.model.fit(X_train, y_train_onehot, epochs=self.training_config["epochs"],
-      #                                validation_data=(X_valid, y_valid_onehot))
+        self.history = self.model.fit(X_train, y_train_onehot, epochs=self.training_config["epochs"],
+                                      validation_data=(X_valid, y_valid_onehot),
+                                      batch_size=self.training_config["batch_size"])
 
-        self.history = self.model.fit(X_train, y_train, epochs=self.training_config["epochs"],
-                                      validation_data=(X_valid, y_valid))
+        # self.history = self.model.fit(X_train, y_train, epochs=self.training_config["epochs"],
+        #                             validation_data=(X_valid, y_valid),
+        #                           batch_size=self.training_config["batch_size"])
 
-    def plot_loss(self):
-        fig, ax = plt.subplots(figsize=(8, 5))
-        ax.set_xlabel("Epoch")
-        ax.set_ylabel("Loss")
-        ax.plot(self.history.history["loss"], label="Training Loss")
-        ax.plot(self.history.history["val_loss"], color="orange",
-                label="Val loss")
-        ax.legend()
-        ax.set_yscale("log")
-        plt.savefig(f"models/{self.tag}_loss.png")
-        plt.show()
-
-    def testing_model(self):
         y_predicted = self.model.predict(self.X_test)
         y_pred_labels = np.argmax(y_predicted, axis=1)
         y_true_labels = self.y_test
@@ -119,37 +116,68 @@ class Model:
         f1 = f1_score(y_true_labels, y_pred_labels, average='macro')
         print("F1-score on test data: {:.2%}".format(f1))
 
-       # f1 = f1_score(y_true_labels, y_pred_labels, average='macro')
-       # print("F1-score on test data: {:.2%}".format(f1))
+        mlflow.set_experiment(experiment_name)
+        mlflow.set_tracking_uri("http://127.0.0.1:5000")
+        with mlflow.start_run(run_name=run_name) as mlflow_run:
+            mlflow.log_params(
+                {
+                    "epochs": self.training_config["epochs"],
+                    "learning_rate": self.model_config["learning_rate"],
+                    "batch_size": self.training_config["batch_size"],
+                }
+            )
+            # Log the final metrics
+            mlflow.log_metrics(
+                {
+                    "train_loss": self.history.history["loss"][-1],
+                    "validation_loss": self.history.history["val_loss"][-1],
+                    "test_accuracy": accuracy,
+                }
+            )
 
-        width = 0.2
-        fig = plt.figure(figsize=(10, 5))
-        classification = ["disk", "old disk", "ellipsoid"]
-        ind = np.arange(3)
+            mlflow.keras.autolog()
+            mlflow_run_id = mlflow_run.info.run_id
+            print("MLFlow Run ID: ", mlflow_run_id)
 
-        # creating the bar plot
-        counts_predicted = np.bincount(y_pred_labels)
-        counts_true = np.bincount(y_true_labels)
+            # signature = infer_signature(X_test, y_predicted)
+            # mlflow.keras.log_model(self.model, "model", signature=signature)
+            fig, ax = plt.subplots(figsize=(8, 5))
+            ax.set_xlabel("Epoch")
+            ax.set_ylabel("Loss")
+            ax.plot(self.history.history["loss"], label="Training Loss")
+            ax.plot(self.history.history["val_loss"], color="orange",
+                    label="Val loss")
+            ax.legend()
+            ax.set_yscale("log")
+            plt.savefig(f"models/{self.tag}_loss.png")
+            mlflow.log_figure(fig, 'loss.png')
+            plt.show()
 
-        plt.bar(ind-0.15, counts_true, align='edge', color='blue',width = 0.3, alpha=0.3, label="True")
-        plt.bar(ind+0.15, counts_predicted , align='edge', color='red',
-                width=0.3, alpha=0.3, label="Predicted")
-        plt.xticks(ind + width, ['disk', 'old disk', 'ellipsoid'])
-        plt.title(f"F1: {f1:.2f}, Prec: {precision:.2f}", fontsize=10)
+            width = 0.2
+            fig = plt.figure(figsize=(10, 5))
+            classification = ["disk", "old disk", "ellipsoid"]
+            ind = np.arange(3)
 
-        plt.legend()
-        plt.ylabel("No. of particles")
-        plt.savefig(f"models/{self.tag}_n_particles_class_validation_data.png")
-        plt.show()
+            # creating the bar plot
+            counts_predicted = np.bincount(y_pred_labels)
+            counts_true = np.bincount(y_true_labels)
+
+            plt.bar(ind - 0.15, counts_true, align='edge', color='blue', width=0.3, alpha=0.3, label="True")
+            plt.bar(ind + 0.15, counts_predicted, align='edge', color='red',
+                    width=0.3, alpha=0.3, label="Predicted")
+            plt.xticks(ind + width, ['disk', 'old disk', 'ellipsoid'])
+            plt.title(f"F1: {f1:.2f}, Prec: {precision:.2f}", fontsize=10)
+
+            plt.legend()
+            plt.ylabel("No. of particles")
+            mlflow.log_figure(fig, 'test.png')
+            plt.savefig(f"models/{self.tag}_n_particles_class_validation_data.png")
+            plt.show()
 
     def save_model(self):
-
         model_json = self.model.to_json()
 
         with open(self.model_config["filepath"] + f"{self.tag}_model.h5", "w") as json_file:
             json_file.write(model_json)
 
         self.model.save_weights(self.model_config["filepath"] + f"{self.tag}_model.h5")
-
-
-

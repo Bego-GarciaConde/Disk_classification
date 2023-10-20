@@ -7,11 +7,11 @@
 		"num_classes": 3
 	},
 	"training": {
-		"epochs": 30,
-		"batch_size": 10
+		"epochs": 10,
+		"batch_size": 32
 	},
 	"model": {
-		"loss": "sparse_categorical_crossentropy",
+		"loss": "categorical_crossentropy",
 		"optimizer": "adam",
 		"learning_rate":  0.001,
 		"filepath": "models/",
