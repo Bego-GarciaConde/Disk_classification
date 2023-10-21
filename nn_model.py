@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 
 from tensorflow.keras.models import Sequential, model_from_json
 from tensorflow.keras.layers import Dense, Activation, Dropout
-
+from tensorflow.keras.regularizers import l2
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import f1_score
@@ -63,7 +63,8 @@ class Model:
             activation = layer['activation'] if 'activation' in layer else None
             input_dim = layer['input_dim'] if 'input_dim' in layer else None
 
-            self.model.add(Dense(neurons, activation=activation, input_shape=(input_dim,)))
+            self.model.add(Dense(neurons, activation=activation, input_shape=(input_dim,),
+                                 kernel_regularizer=l2(self.model_config['l2_regularizer'])))
 
         opt = tf.keras.optimizers.Adam(learning_rate=self.model_config['learning_rate'])
         # self.model.compile(loss="sparse_categorical_crossentropy", optimizer=opt)#if not one-hot coding
@@ -124,6 +125,7 @@ class Model:
                     "epochs": self.training_config["epochs"],
                     "learning_rate": self.model_config["learning_rate"],
                     "batch_size": self.training_config["batch_size"],
+                    "l2_regularizer": self.model_config["l2_regularizer"],
                 }
             )
             # Log the final metrics
@@ -148,7 +150,7 @@ class Model:
             ax.plot(self.history.history["val_loss"], color="orange",
                     label="Val loss")
             ax.legend()
-            ax.set_yscale("log")
+         #   ax.set_yscale("log")
             plt.savefig(f"models/{self.tag}_loss.png")
             mlflow.log_figure(fig, 'loss.png')
             plt.show()
