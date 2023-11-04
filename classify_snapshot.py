@@ -5,13 +5,45 @@ from matplotlib import rcParams
 
 rcParams['axes.formatter.use_mathtext'] = True
 import tensorflow as tf
+from nn_model import Model
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from config import *
 from utils import cartesian_to_spherical, histogram_2d
-from nn_model import Model
+from config import *
+
+class Spherical (BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
+        return self
+    def transform(self, X):
+        return cartesian_to_spherical(X)
+
+class ColumnDropping (BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
+        return self
+    def transform(self, X):
+        return X.drop({'ID','X', 'VX', 'Y', 'VY',
+                            'Phi', 'Vphi', 'R','AlphaH',
+                            'FeH','Age','Vr','AlphaFe','cos_alpha'},
+                      axis=1)
+
+class InnerFiltering (BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
+        return self
+    def transform(self, X):
+        return X[X["R_sph"] < 30]
 
 
+pipeProcess = Pipeline([
+    ("spherical", Spherical()),
+    ("inner_filter", InnerFiltering())
+
+])
+pipeTest = Pipeline([
+    ("dropper", ColumnDropping()),
+    ("scaler", StandardScaler())
+])
 class ClassifySnapshot:
     def __init__(self, name):
         self.name = name
@@ -26,23 +58,24 @@ class ClassifySnapshot:
 
     def prepare_data_test(self):
         df_complete = pd.merge(self.stars_data, self.cla_disk_data[["ID", "JzJc", "cos_alpha"]], on="ID")
-        df_complete = cartesian_to_spherical(df_complete)
-
-        df_complete = df_complete[df_complete["R_sph"] < 30].copy()
-        self.complete_data = df_complete
-        df_test = df_complete.drop({'ID',
-                                    'X', 'VX', 'Y', 'VY',
-                                    'Phi',
-                                    'Vphi',
-                                    'R',
-                                    'AlphaH',
-                                    'FeH',
-                                    'Age',
-                                    'Vr',
-                                    'AlphaFe',
-                                    'cos_alpha'
-                                    }, axis=1)
-        self.test_data = df_test
+      #  df_complete = cartesian_to_spherical(df_complete)
+        self.complete_data = pipeProcess.fit_transform(df_complete)
+        self.test_data = pipeTest.fit_transform(self.complete_data)
+        # df_complete = df_complete[df_complete["R_sph"] < 30].copy()
+        # self.complete_data = df_complete
+        # df_test = df_complete.drop({'ID',
+        #                             'X', 'VX', 'Y', 'VY',
+        #                             'Phi',
+        #                             'Vphi',
+        #                             'R',
+        #                             'AlphaH',
+        #                             'FeH',
+        #                             'Age',
+        #                             'Vr',
+        #                             'AlphaFe',
+        #                             'cos_alpha'
+        #                             }, axis=1)
+        # self.test_data = df_test
 
     def disk_classification_nn(self):
         nn = Model()
@@ -54,10 +87,10 @@ class ClassifySnapshot:
         opt = tf.keras.optimizers.Adam(learning_rate=nn.model_config['learning_rate'])
         nn.model.compile(loss=nn.model_config["loss"], optimizer=opt)
 
-        scaler = StandardScaler()
-        data_test = scaler.fit_transform(self.test_data)
+      #  scaler = StandardScaler()
+      #  data_test = scaler.fit_transform(self.test_data)
 
-        y_predicted = nn.model.predict(data_test)
+        y_predicted = nn.model.predict(self.test_data)
 
         y_pred_labels = np.argmax(y_predicted, axis=1)
 

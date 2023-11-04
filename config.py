@@ -15,11 +15,11 @@ PREPARE_DATA = 0
 SNAPSHOTS_TRAINING = [999, 890, 790]
 
 # ----TRAINING DATA-------
-TRAIN_DATA = 1
+TRAIN_DATA = 0
 
 # ----EVALUATE SNAPSHOT----
 
-EVALUATE_SNAPSHOT = 0
+EVALUATE_SNAPSHOT = 1
 SNAPSHOT_TEST = 996
 
 # Define names for tensorboard logging and mlflow

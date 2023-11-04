@@ -1,0 +1,15 @@
+artifact_uri: file:///home/bego/Disk_classification/mlruns/363360171732434385/c14ba22b1d32472abf567342977d9de9/artifacts
+end_time: 1699118444432
+entry_point_name: ''
+experiment_id: '363360171732434385'
+lifecycle_stage: active
+run_id: c14ba22b1d32472abf567342977d9de9
+run_name: '20231104_180457'
+run_uuid: c14ba22b1d32472abf567342977d9de9
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1699118438836
+status: 3
+tags: []
+user_id: bego

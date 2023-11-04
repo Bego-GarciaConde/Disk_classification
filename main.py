@@ -5,7 +5,7 @@ Created on 24/03/2023
 @author: B. García-Conde
 """
 from config import *
-from preparing_data import prepare_data
+from preparing_training_data import prepare_data
 from nn_model import Model
 from classify_snapshot import ClassifySnapshot
 
@@ -28,6 +28,7 @@ def main():
         snapshot.prepare_data_test()
         snapshot.disk_classification_nn()
         snapshot.plot_classification()
+
 
 
 if __name__ == "__main__":

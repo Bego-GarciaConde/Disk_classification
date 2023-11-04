@@ -46,7 +46,7 @@ class Model:
         self.tag = f"SCC_relu_activation_{self.training_config['epochs']}_epochs"
 
     def load_model(self):
-        json_file = open('models/model.json', 'r')
+        json_file = open(f'models/{self.tag}_model.json', 'r')
         loaded_model_json = json_file.read()
         json_file.close()
         self.model = model_from_json(loaded_model_json)
@@ -179,7 +179,7 @@ class Model:
     def save_model(self):
         model_json = self.model.to_json()
 
-        with open(self.model_config["filepath"] + f"{self.tag}_model.h5", "w") as json_file:
+        with open(self.model_config["filepath"] + f"{self.tag}_model.json", "w") as json_file:
             json_file.write(model_json)
 
         self.model.save_weights(self.model_config["filepath"] + f"{self.tag}_model.h5")
