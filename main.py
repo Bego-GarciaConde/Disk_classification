@@ -6,7 +6,7 @@ Created on 24/03/2023
 """
 from config import *
 from preparing_training_data import prepare_data
-from nn_model import Model
+from training_nn_model import Model
 from classify_snapshot import ClassifySnapshot
 
 
@@ -19,8 +19,6 @@ def main():
       #  nn.load_model()
         nn.build_model()
         nn.train_model()
-      #  nn.plot_loss()
-      #  nn.testing_model()
         nn.save_model()
 
     if EVALUATE_SNAPSHOT == 1:

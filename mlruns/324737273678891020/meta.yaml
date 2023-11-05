@@ -1,0 +1,6 @@
+artifact_location: file:///home/bego/Disk_classification/mlruns/324737273678891020
+creation_time: 1699181267229
+experiment_id: '324737273678891020'
+last_update_time: 1699181267229
+lifecycle_stage: active
+name: Disk_classification_withDropout

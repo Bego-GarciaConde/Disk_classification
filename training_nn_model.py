@@ -62,13 +62,16 @@ class Model:
             neurons = layer['neurons'] if 'neurons' in layer else None
             activation = layer['activation'] if 'activation' in layer else None
             input_dim = layer['input_dim'] if 'input_dim' in layer else None
+            if layer['type']=="dense":
+                self.model.add(Dense(neurons, activation=activation, input_shape=(input_dim,),
+                                     kernel_regularizer=l2(self.model_config['l2_regularizer'])))
+            elif layer['type']=="dropout":
+                self.model.add(Dropout(self.model_config["dropout_rate"]))
 
-            self.model.add(Dense(neurons, activation=activation, input_shape=(input_dim,),
-                                 kernel_regularizer=l2(self.model_config['l2_regularizer'])))
 
         opt = tf.keras.optimizers.Adam(learning_rate=self.model_config['learning_rate'])
         # self.model.compile(loss="sparse_categorical_crossentropy", optimizer=opt)#if not one-hot coding
-        self.model.compile(optimizer=opt, loss=self.model_config["loss"])
+        self.model.compile(optimizer=opt, loss=self.model_config["loss"],  metrics=['accuracy'])
 
     def train_model(self):
         df = pd.read_csv(self.data_config["filepath"] + self.data_config["filename"], index_col=0)
@@ -92,7 +95,7 @@ class Model:
 
         y_train_onehot = tf.keras.utils.to_categorical(y_train, num_classes=3)
         y_valid_onehot = tf.keras.utils.to_categorical(y_valid, num_classes=3)
-        # y_test_onehot = tf.keras.utils.to_categorical(y_valid, num_classes=3)
+
 
         self.history = self.model.fit(X_train, y_train_onehot, epochs=self.training_config["epochs"],
                                       validation_data=(X_valid, y_valid_onehot),
@@ -107,11 +110,9 @@ class Model:
         y_true_labels = self.y_test
 
         accuracy = accuracy_score(y_true_labels, y_pred_labels)
-
         print("Accuracy on test data: {:.2%}".format(accuracy))
 
         precision = precision_score(y_true_labels, y_pred_labels, average='macro')
-
         print("Precision on test data: {:.2%}".format(precision))
 
         f1 = f1_score(y_true_labels, y_pred_labels, average='macro')
@@ -126,6 +127,7 @@ class Model:
                     "learning_rate": self.model_config["learning_rate"],
                     "batch_size": self.training_config["batch_size"],
                     "l2_regularizer": self.model_config["l2_regularizer"],
+                    "dropout_rate": self.model_config["dropout_rate"],
                 }
             )
             # Log the final metrics
@@ -141,8 +143,8 @@ class Model:
             mlflow_run_id = mlflow_run.info.run_id
             print("MLFlow Run ID: ", mlflow_run_id)
 
-            # signature = infer_signature(X_test, y_predicted)
-            # mlflow.keras.log_model(self.model, "model", signature=signature)
+        #    signature = infer_signature(X_test, y_predicted)
+       #     mlflow.keras.log_model(self.model, "model", signature=signature)
             fig, ax = plt.subplots(figsize=(8, 5))
             ax.set_xlabel("Epoch")
             ax.set_ylabel("Loss")
@@ -152,8 +154,19 @@ class Model:
             ax.legend()
          #   ax.set_yscale("log")
             plt.savefig(f"models/{self.tag}_loss.png")
-            mlflow.log_figure(fig, 'loss.png')
+        #    mlflow.log_figure(fig, 'loss.png')
             plt.show()
+
+            fig, ax = plt.subplots(figsize=(8, 5))
+            ax.set_xlabel("Epoch")
+            ax.set_ylabel("Accuracy")
+
+            plt.plot(self.history.history["accuracy"], label='Training Accuracy')
+            plt.plot(self.history.history["val_accuracy"], label='Validation Accuracy')
+            plt.title('Training and validation accuracy')
+            plt.legend()
+            mlflow.log_figure(fig, 'accuracy.png')
+
 
             width = 0.2
             fig = plt.figure(figsize=(10, 5))

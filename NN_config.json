@@ -15,6 +15,7 @@
 		"optimizer": "adam",
 		"learning_rate":  0.001,
 		"l2_regularizer":  0.0001,
+		"dropout_rate":0.15,
 		"filepath": "models/",
 		"layers": [
 			{
@@ -43,6 +44,9 @@
 				"type": "dense",
 				"neurons": 32,
 				"activation": "relu"
+			},
+			{
+				"type": "dropout"
 			},
 			{
 				"type": "dense",

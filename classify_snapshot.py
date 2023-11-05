@@ -5,7 +5,7 @@ from matplotlib import rcParams
 
 rcParams['axes.formatter.use_mathtext'] = True
 import tensorflow as tf
-from nn_model import Model
+from training_nn_model import Model
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -14,12 +14,18 @@ from utils import cartesian_to_spherical, histogram_2d
 from config import *
 
 class Spherical (BaseEstimator, TransformerMixin):
+    """
+    Pipeline: Cartesian to spherical coordinates
+    """
     def fit(self, X, y=None):
         return self
     def transform(self, X):
         return cartesian_to_spherical(X)
 
 class ColumnDropping (BaseEstimator, TransformerMixin):
+    """
+    Pipeline: Drop unnecessary columns
+    """
     def fit(self, X, y=None):
         return self
     def transform(self, X):
@@ -29,17 +35,21 @@ class ColumnDropping (BaseEstimator, TransformerMixin):
                       axis=1)
 
 class InnerFiltering (BaseEstimator, TransformerMixin):
+    """
+    Pipeline: Take only particles inside 30 kpc
+    """
     def fit(self, X, y=None):
         return self
     def transform(self, X):
         return X[X["R_sph"] < 30]
 
-
+#First step: prepare data frame
 pipeProcess = Pipeline([
     ("spherical", Spherical()),
     ("inner_filter", InnerFiltering())
 
 ])
+#Second step: prepare data to insert in model
 pipeTest = Pipeline([
     ("dropper", ColumnDropping()),
     ("scaler", StandardScaler())
@@ -49,33 +59,21 @@ class ClassifySnapshot:
         self.name = name
         self.stars_data = pd.read_csv(path_snapshots + f"{self.name}_stars_Rvir.csv", sep=",")
         self.cla_disk_data = pd.read_csv(path_disk_classification + f"cla_disco_{self.name}.csv", index_col=0)
-        self.nn_model = None
-        self.test_data = None
-        self.complete_data = None
+        self.nn_model = None #NN model
+        self.test_data = None #data to insert in model
+        self.complete_data = None #data frame in which will also be added the classification results
         self.disk = None
         self.old_disk = None
         self.ellipsoid = None
 
     def prepare_data_test(self):
+        """
+        Merge both dataframes containing the data to insert in the trained model
+        :return:
+        """
         df_complete = pd.merge(self.stars_data, self.cla_disk_data[["ID", "JzJc", "cos_alpha"]], on="ID")
-      #  df_complete = cartesian_to_spherical(df_complete)
         self.complete_data = pipeProcess.fit_transform(df_complete)
         self.test_data = pipeTest.fit_transform(self.complete_data)
-        # df_complete = df_complete[df_complete["R_sph"] < 30].copy()
-        # self.complete_data = df_complete
-        # df_test = df_complete.drop({'ID',
-        #                             'X', 'VX', 'Y', 'VY',
-        #                             'Phi',
-        #                             'Vphi',
-        #                             'R',
-        #                             'AlphaH',
-        #                             'FeH',
-        #                             'Age',
-        #                             'Vr',
-        #                             'AlphaFe',
-        #                             'cos_alpha'
-        #                             }, axis=1)
-        # self.test_data = df_test
 
     def disk_classification_nn(self):
         nn = Model()
@@ -87,14 +85,12 @@ class ClassifySnapshot:
         opt = tf.keras.optimizers.Adam(learning_rate=nn.model_config['learning_rate'])
         nn.model.compile(loss=nn.model_config["loss"], optimizer=opt)
 
-      #  scaler = StandardScaler()
-      #  data_test = scaler.fit_transform(self.test_data)
-
         y_predicted = nn.model.predict(self.test_data)
 
-        y_pred_labels = np.argmax(y_predicted, axis=1)
+        #y_pred_labels = np.argmax(y_predicted, axis=1)
 
-        self.complete_data["Class"] = y_pred_labels
+        #self.complete_data["Class"] = y_pred_labels
+        self.complete_data["Class"] = y_predicted
 
         self.disk = self.complete_data[0 == self.complete_data["Class"]].copy()
         self.old_disk = self.complete_data[1 == self.complete_data["Class"]].copy()

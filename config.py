@@ -15,15 +15,15 @@ PREPARE_DATA = 0
 SNAPSHOTS_TRAINING = [999, 890, 790]
 
 # ----TRAINING DATA-------
-TRAIN_DATA = 0
+TRAIN_DATA = 1
 
 # ----EVALUATE SNAPSHOT----
 
-EVALUATE_SNAPSHOT = 1
+EVALUATE_SNAPSHOT = 0
 SNAPSHOT_TEST = 996
 
 # Define names for tensorboard logging and mlflow
-experiment_name = "Disk_classification"
+experiment_name = "Disk_classification_withDropout"
 #model_name = "Disk_classification_%Y%m%d_%H%M%S"
 run_name = datetime.now().strftime("%Y%m%d_%H%M%S")
 #model_name = datetime.now().strftime("%Y%m%d_%H%M%S")
